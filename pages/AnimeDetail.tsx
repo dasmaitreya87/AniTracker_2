@@ -5,10 +5,10 @@ import { getAnimeById, getEpisodeRatings, getAnimeNews, AnimeNewsItem } from '..
 import { AnimeMetadata, EpisodeRating, AnimeStatus, UserAnimeEntry } from '../types';
 import { Button } from '../components/ui/Button';
 import { EpisodeRatingsChart } from '../components/EpisodeRatingsChart';
-import { ArrowLeft, Plus, Star, Calendar, ExternalLink, MessageSquare, Share2, Edit3, ArrowUpRight, AlertCircle, Link, Twitter, Check, Heart } from 'lucide-react';
+import { ArrowLeft, Plus, Star, Calendar, ExternalLink, MessageSquare, Share2, Edit3, ArrowUpRight, AlertCircle, Link, Twitter, Check, Heart, Trash2 } from 'lucide-react';
 
 export const AnimeDetail = () => {
-  const { selectedAnimeId, setView, library, openModal, user, toggleFavorite } = useStore();
+  const { selectedAnimeId, setView, library, openModal, user, toggleFavorite, deleteAnime } = useStore();
   const [anime, setAnime] = useState<AnimeMetadata | null>(null);
   const [ratings, setRatings] = useState<EpisodeRating[]>([]);
   const [news, setNews] = useState<AnimeNewsItem[]>([]);
@@ -63,6 +63,12 @@ export const AnimeDetail = () => {
     };
     
     openModal('ADD', tempEntry);
+  };
+
+  const handleDelete = () => {
+      if (libraryEntry) {
+          deleteAnime(libraryEntry.id);
+      }
   };
 
   const handleShare = (platform: 'COPY' | 'TWITTER') => {
@@ -157,9 +163,14 @@ export const AnimeDetail = () => {
                </Button>
                
                {libraryEntry ? (
-                   <Button onClick={() => openModal('EDIT', libraryEntry)} variant="secondary" className="bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-white shadow-lg">
-                       <Edit3 size={18} className="mr-2" /> Update Progress
-                   </Button>
+                   <>
+                       <Button onClick={() => openModal('EDIT', libraryEntry)} variant="secondary" className="bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-white shadow-lg">
+                           <Edit3 size={18} className="mr-2" /> Update Progress
+                       </Button>
+                       <Button onClick={handleDelete} variant="secondary" className="bg-red-900/20 text-red-500 hover:bg-red-900/40 border border-red-900/50" title="Remove">
+                           <Trash2 size={18} />
+                       </Button>
+                   </>
                ) : (
                    <Button size="lg" onClick={handleDirectAdd} className="shadow-xl shadow-rose-600/20">
                        <Plus size={20} className="mr-2" /> Add to Shelf
@@ -175,9 +186,14 @@ export const AnimeDetail = () => {
             {/* Mobile Actions */}
             <div className="md:hidden flex gap-4">
                {libraryEntry ? (
-                   <Button onClick={() => openModal('EDIT', libraryEntry)} variant="secondary" className="flex-1 bg-zinc-800 border-zinc-700 text-white">
-                        <Edit3 size={18} className="mr-2" /> Update
-                   </Button>
+                   <>
+                       <Button onClick={() => openModal('EDIT', libraryEntry)} variant="secondary" className="flex-1 bg-zinc-800 border-zinc-700 text-white">
+                            <Edit3 size={18} className="mr-2" /> Update
+                       </Button>
+                       <Button onClick={handleDelete} variant="secondary" className="bg-red-900/20 text-red-500 border-red-900/30">
+                            <Trash2 size={18} />
+                       </Button>
+                   </>
                ) : (
                    <Button size="lg" onClick={handleDirectAdd} className="flex-1 shadow-xl">
                        <Plus size={20} className="mr-2" /> Add to Shelf

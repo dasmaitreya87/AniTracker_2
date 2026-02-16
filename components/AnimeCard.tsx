@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { UserAnimeEntry, AnimeStatus } from '../types';
 import { useStore } from '../services/store';
 import { Button } from './ui/Button';
-import { Plus, Check, MoreVertical, Trash2, Edit3, Loader, Play, Radio } from 'lucide-react';
+import { Plus, Check, MoreVertical, Edit3, Loader, Play, Radio, Trash2 } from 'lucide-react';
 
 interface AnimeCardProps {
   entry: UserAnimeEntry;
@@ -11,7 +11,7 @@ interface AnimeCardProps {
 }
 
 export const AnimeCard: React.FC<AnimeCardProps> = ({ entry, readOnly = false }) => {
-  const { updateAnime, deleteAnime, viewAnimeDetails, openModal } = useStore();
+  const { updateAnime, viewAnimeDetails, openModal, deleteAnime } = useStore();
   const [isUpdating, setIsUpdating] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
@@ -83,11 +83,16 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ entry, readOnly = false })
     }
   };
 
+  const toggleMenu = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setShowMenu(!showMenu);
+  };
+
   return (
-    <div className="group relative bg-zinc-900 rounded-md overflow-hidden border border-zinc-800 transition-all hover:bg-zinc-800 flex flex-row h-40">
+    <div className={`group relative bg-zinc-900 rounded-md border border-zinc-800 transition-all hover:bg-zinc-800 flex flex-row h-40 ${showMenu ? 'z-50' : ''}`}>
       {/* Poster - Clickable */}
       <div 
-         className="relative w-28 h-full shrink-0 cursor-pointer"
+         className="relative w-28 h-full shrink-0 cursor-pointer overflow-hidden rounded-l-md"
          onClick={() => viewAnimeDetails(entry.animeId)}
       >
         <img 
@@ -106,7 +111,7 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ entry, readOnly = false })
       {/* Content */}
       <div className="flex-1 p-4 flex flex-col justify-between">
         <div className="flex justify-between items-start">
-            <div className="pr-4">
+            <div className="pr-4 flex-1">
                 <h3 
                     className="font-bold text-base text-white line-clamp-1 mb-1 cursor-pointer hover:text-rose-500 transition-colors" 
                     title={title.english || title.romaji}
@@ -123,32 +128,39 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ entry, readOnly = false })
             
             {/* Context Menu Button - Hidden in Read Only */}
             {!readOnly && (
-                <div className="relative">
+                <div className="relative ml-2">
                     <button 
-                    onClick={() => setShowMenu(!showMenu)}
-                    className="text-zinc-500 hover:text-white p-1 rounded-full hover:bg-zinc-700 transition-colors"
+                        onClick={toggleMenu}
+                        className="text-zinc-500 hover:text-white p-1 rounded-full hover:bg-zinc-700 transition-colors"
+                        type="button"
                     >
-                    <MoreVertical size={18} />
+                        <MoreVertical size={18} />
                     </button>
+                    
                     {showMenu && (
-                    <div className="absolute right-0 top-8 z-20 w-40 bg-zinc-900 rounded border border-zinc-700 py-1 shadow-xl">
+                    <div className="absolute right-0 top-8 z-50 w-40 bg-zinc-900 rounded border border-zinc-700 py-1 shadow-2xl animate-fade-in ring-1 ring-black/50 overflow-hidden">
                         <button 
-                        onClick={() => { viewAnimeDetails(entry.animeId); setShowMenu(false); }}
-                        className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 flex items-center gap-2"
+                            onClick={(e) => { e.stopPropagation(); viewAnimeDetails(entry.animeId); setShowMenu(false); }}
+                            className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                         >
                             Info
                         </button>
                         <button 
-                        onClick={() => { openModal('EDIT', entry); setShowMenu(false); }}
-                        className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 flex items-center gap-2"
+                            onClick={(e) => { e.stopPropagation(); openModal('EDIT', entry); setShowMenu(false); }}
+                            className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                         >
-                            <Edit3 size={14} /> Update Progress
+                            <Edit3 size={14} /> Update
                         </button>
+                        <div className="h-px bg-zinc-800 my-1"></div>
                         <button 
-                        onClick={() => { deleteAnime(entry.id); setShowMenu(false); }}
-                        className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-zinc-800 flex items-center gap-2 border-t border-zinc-800 mt-1 pt-2"
+                            onClick={(e) => { 
+                                e.stopPropagation(); 
+                                deleteAnime(entry.id);
+                                setShowMenu(false); 
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-zinc-800 hover:text-red-300 flex items-center gap-2 transition-colors"
                         >
-                        <Trash2 size={14} /> Remove
+                            <Trash2 size={14} /> Remove
                         </button>
                     </div>
                     )}
@@ -198,6 +210,11 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ entry, readOnly = false })
           </div>
         </div>
       </div>
+      
+      {/* Overlay to close menu when clicking outside */}
+      {showMenu && (
+          <div className="fixed inset-0 z-40 cursor-default" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
+      )}
     </div>
   );
 };

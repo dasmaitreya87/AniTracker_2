@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Search, Loader, Plus, Save, Info, AlertTriangle, Check, User, ArrowRight } from 'lucide-react';
+import { X, Search, Loader, Plus, Save, Info, AlertTriangle, Check, User, ArrowRight, Trash2 } from 'lucide-react';
 import { searchAnime } from '../services/anilistService';
 import { generateAnimeBlurb } from '../services/geminiService';
 import { AnimeMetadata, AnimeStatus, UserAnimeEntry, UserProfile } from '../types';
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export const SearchAddFlow: React.FC<Props> = ({ isOpen, onClose, mode, initialEntry }) => {
-  const { addAnime, updateAnime, viewAnimeDetails, user, library, searchUsers, viewUserProfile } = useStore();
+  const { addAnime, updateAnime, viewAnimeDetails, user, library, searchUsers, viewUserProfile, deleteAnime } = useStore();
   const [step, setStep] = useState<'SEARCH' | 'CONFIRM'>('SEARCH');
   const [searchType, setSearchType] = useState<'ANIME' | 'USER'>('ANIME');
   const [query, setQuery] = useState('');
@@ -95,6 +95,13 @@ export const SearchAddFlow: React.FC<Props> = ({ isOpen, onClose, mode, initialE
   const handleInfoClick = () => {
     if (selectedAnime) {
         viewAnimeDetails(selectedAnime.id);
+        onClose();
+    }
+  };
+
+  const handleDelete = () => {
+    if (initialEntry) {
+        deleteAnime(initialEntry.id);
         onClose();
     }
   };
@@ -367,21 +374,36 @@ export const SearchAddFlow: React.FC<Props> = ({ isOpen, onClose, mode, initialE
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-zinc-800 flex justify-end gap-3 bg-black">
-          {step === 'CONFIRM' && mode === 'ADD' && !initialEntry && (
-            <Button variant="ghost" onClick={() => setStep('SEARCH')}>Back</Button>
-          )}
-          {step === 'CONFIRM' ? (
-            <Button onClick={handleConfirm} isLoading={isProcessing} className={mode === 'EDIT' ? 'bg-green-600 hover:bg-green-500 shadow-green-900/20' : ''}>
-              {mode === 'EDIT' ? (
-                  <><Save size={18} className="mr-2"/> Save Changes</>
-              ) : (
-                  'Add to Library'
-              )}
-            </Button>
+        <div className="p-4 border-t border-zinc-800 flex items-center justify-between gap-3 bg-black">
+          {step === 'CONFIRM' && mode === 'EDIT' && initialEntry ? (
+              <Button 
+                variant="danger" 
+                onClick={handleDelete} 
+                className="bg-red-900/20 text-red-500 hover:bg-red-900/40 border border-red-900/50 hover:border-red-500/50"
+                title="Remove from Library"
+              >
+                  <Trash2 size={18} />
+              </Button>
           ) : (
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
+             <div></div> 
           )}
+
+          <div className="flex gap-3">
+            {step === 'CONFIRM' && mode === 'ADD' && !initialEntry && (
+                <Button variant="ghost" onClick={() => setStep('SEARCH')}>Back</Button>
+            )}
+            {step === 'CONFIRM' ? (
+                <Button onClick={handleConfirm} isLoading={isProcessing} className={mode === 'EDIT' ? 'bg-green-600 hover:bg-green-500 shadow-green-900/20' : ''}>
+                {mode === 'EDIT' ? (
+                    <><Save size={18} className="mr-2"/> Save Changes</>
+                ) : (
+                    'Add to Library'
+                )}
+                </Button>
+            ) : (
+                <Button variant="ghost" onClick={onClose}>Cancel</Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
