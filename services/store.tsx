@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, PropsWithChildren, useRef } from 'react';
-import { UserProfile, UserAnimeEntry, ViewState, AnimeStatus, AppNotification, PostLoginPreference, RecommendationFeedback, NewsPost, NewsComment, Badge, AnimeMetadata, FavoriteItem, UserBadge } from '../types';
+import { UserProfile, UserAnimeEntry, ViewState, AnimeStatus, AppNotification, RecommendationFeedback, NewsPost, NewsComment, Badge, AnimeMetadata, FavoriteItem, UserBadge } from '../types';
 import { MOCK_USER, BADGES_CATALOG } from '../constants';
 import { evaluateBadges } from './badgeService';
 import { supabase } from './supabaseClient';
@@ -31,7 +31,6 @@ interface AppState {
   modal: ModalState;
   addNewsModal: AddNewsModalState;
   notifications: AppNotification[];
-  isPostLoginModalOpen: boolean;
   newsPosts: NewsPost[];
   newsComments: Record<string, NewsComment[]>; 
   likedNews: Set<string>; 
@@ -56,8 +55,6 @@ interface AppState {
   openAddNewsModal: (initialData?: AddNewsModalState['initialData']) => void;
   closeAddNewsModal: () => void;
   dismissNotification: (id: string) => void;
-  setPostLoginChoice: (choice: PostLoginPreference, remember: boolean) => void;
-  closePostLoginModal: () => void;
   handleRecommendationFeedback: (animeId: number, action: 'like' | 'dislike' | 'hide') => void;
   toggleFavorite: (anime: AnimeMetadata) => void;
   
@@ -92,7 +89,6 @@ export const AppProvider = ({ children }: PropsWithChildren<{}>) => {
   const [modal, setModal] = useState<ModalState>({ isOpen: false, mode: 'ADD' });
   const [addNewsModal, setAddNewsModal] = useState<AddNewsModalState>({ isOpen: false });
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [isPostLoginModalOpen, setIsPostLoginModalOpen] = useState(false);
   
   // Public Profile State
   const [viewedProfile, setViewedProfile] = useState<UserProfile | null>(null);
@@ -129,6 +125,9 @@ export const AppProvider = ({ children }: PropsWithChildren<{}>) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       if (session) {
         const userId = session.user.id;
+        // If the user is already authenticated and we get another SIGNED_IN event (e.g. from tab focus),
+        // we generally just want to refresh data, not reset the whole app state.
+        // However, handleSessionOk handles state restoration, so it's safe to run it.
         if (currentAuthUserId.current === userId && event !== 'SIGNED_IN') {
              return;
         }
@@ -145,45 +144,35 @@ export const AppProvider = ({ children }: PropsWithChildren<{}>) => {
       currentAuthUserId.current = userId;
       const profile = await initUserData(userId);
       if (profile) {
-          if (event === 'SIGNED_IN') {
-               const pref = profile.postLoginDefault;
-               if (pref === 'DASHBOARD') {
-                   setView('DASHBOARD');
-               } else if (pref === 'LANDING') {
-                   setView('HOME');
-               } else {
-                   setView('HOME'); 
-                   setIsPostLoginModalOpen(true);
-               }
-          } else if (event === 'INITIAL_SESSION') {
-               // Restore state from local storage
-               const lastView = localStorage.getItem('anitrackr_last_view') as ViewState | null;
-               
-               if (lastView && lastView !== 'AUTH') {
-                   // Restore specific context data
-                   if (lastView === 'DETAILS') {
-                       const aid = localStorage.getItem('anitrackr_selected_anime');
-                       if (aid) setSelectedAnimeId(parseInt(aid));
-                   } else if (lastView === 'NEWS_DETAIL') {
-                       const nid = localStorage.getItem('anitrackr_selected_news');
-                       if (nid) {
-                           setSelectedNewsId(nid);
-                           fetchComments(nid);
-                       }
-                   } else if (lastView === 'PUBLIC_PROFILE') {
-                        const uid = localStorage.getItem('anitrackr_viewed_user');
-                        if (uid) {
-                            // Attempt to view profile. This sets view internally.
-                            await viewUserProfile(uid); 
-                            return; 
-                        }
+           // Always prioritize restoring the user's last known location.
+           // This prevents redirecting to Home when the window is minimized/maximized or tab is refreshed.
+           const lastView = localStorage.getItem('anitrackr_last_view') as ViewState | null;
+           
+           if (lastView && lastView !== 'AUTH') {
+               // Restore specific context data needed for the view
+               if (lastView === 'DETAILS') {
+                   const aid = localStorage.getItem('anitrackr_selected_anime');
+                   if (aid) setSelectedAnimeId(parseInt(aid));
+               } else if (lastView === 'NEWS_DETAIL') {
+                   const nid = localStorage.getItem('anitrackr_selected_news');
+                   if (nid) {
+                       setSelectedNewsId(nid);
+                       fetchComments(nid);
                    }
-                   
-                   setView(lastView);
-               } else {
-                   setView('DASHBOARD');
+               } else if (lastView === 'PUBLIC_PROFILE') {
+                    const uid = localStorage.getItem('anitrackr_viewed_user');
+                    if (uid) {
+                        // Attempt to view profile. This sets view internally.
+                        await viewUserProfile(uid); 
+                        return; 
+                    }
                }
-          }
+               
+               setView(lastView);
+           } else {
+               // If no history exists (fresh login), default to HOME
+               setView('HOME');
+           }
       }
   };
 
@@ -193,7 +182,7 @@ export const AppProvider = ({ children }: PropsWithChildren<{}>) => {
       setLibrary([]);
       setLikedNews(new Set());
       setViewState('AUTH'); // Don't use setView here to avoid overwriting last_view immediately if we want to debug, but standard flow suggests auth reset
-      setIsPostLoginModalOpen(false);
+      localStorage.setItem('anitrackr_last_view', 'AUTH');
   };
 
   const initUserData = async (userId: string) => {
@@ -300,7 +289,6 @@ export const AppProvider = ({ children }: PropsWithChildren<{}>) => {
             favoriteGenres: profile.favorite_genres || [],
             isPrivate: profile.is_private || false,
             showAdultContent: profile.show_adult_content || false,
-            postLoginDefault: profile.post_login_default as PostLoginPreference,
             badges: formattedBadges, 
             favorites: formattedFavorites,
             joinedAt: profile.created_at ? new Date(profile.created_at).getTime() : Date.now()
@@ -448,14 +436,6 @@ export const AppProvider = ({ children }: PropsWithChildren<{}>) => {
       localStorage.removeItem('anitrackr_viewed_user');
       handleSessionGone(); 
   };
-
-  const setPostLoginChoice = (choice: PostLoginPreference, remember: boolean) => {
-    if (choice === 'DASHBOARD') setView('DASHBOARD');
-    if (choice === 'LANDING') setView('HOME');
-    if (remember && user) { updateUser({ postLoginDefault: choice }); }
-    setIsPostLoginModalOpen(false);
-  };
-  const closePostLoginModal = () => { setIsPostLoginModalOpen(false); setView('DASHBOARD'); };
   
   const viewAnimeDetails = (animeId: number) => { 
       setSelectedAnimeId(animeId); 
@@ -607,7 +587,6 @@ export const AppProvider = ({ children }: PropsWithChildren<{}>) => {
       if (updates.bio) dbUpdates.bio = updates.bio;
       if (updates.isPrivate !== undefined) dbUpdates.is_private = updates.isPrivate;
       if (updates.showAdultContent !== undefined) dbUpdates.show_adult_content = updates.showAdultContent;
-      if (updates.postLoginDefault) dbUpdates.post_login_default = updates.postLoginDefault;
       await supabase.from('profiles').update(dbUpdates).eq('id', user.id);
   };
 
@@ -660,7 +639,7 @@ export const AppProvider = ({ children }: PropsWithChildren<{}>) => {
   const reportNews = (id: string, reason: string) => { setNotifications(prev => [...prev, { id: crypto.randomUUID(), type: 'INFO', title: 'Report Submitted', message: 'Thanks for keeping the community safe.', icon: '🛡️' }]); };
 
   return (
-    <AppContext.Provider value={{ user, library, view, selectedAnimeId, selectedNewsId, isAuthenticated: !!user, modal, addNewsModal, notifications, isPostLoginModalOpen, newsPosts, newsComments, likedNews, viewedProfile, viewedLibrary, login, signUp, logout, setView, viewAnimeDetails, viewNewsDetails, addAnime, updateAnime, deleteAnime, updateUser, openModal, closeModal, openAddNewsModal, closeAddNewsModal, dismissNotification, setPostLoginChoice, closePostLoginModal, handleRecommendationFeedback, toggleFavorite, viewUserProfile, searchUsers, addNewsPost, toggleLikeNews, addNewsComment, fetchComments, reportNews }}>
+    <AppContext.Provider value={{ user, library, view, selectedAnimeId, selectedNewsId, isAuthenticated: !!user, modal, addNewsModal, notifications, newsPosts, newsComments, likedNews, viewedProfile, viewedLibrary, login, signUp, logout, setView, viewAnimeDetails, viewNewsDetails, addAnime, updateAnime, deleteAnime, updateUser, openModal, closeModal, openAddNewsModal, closeAddNewsModal, dismissNotification, handleRecommendationFeedback, toggleFavorite, viewUserProfile, searchUsers, addNewsPost, toggleLikeNews, addNewsComment, fetchComments, reportNews }}>
       {children}
     </AppContext.Provider>
   );

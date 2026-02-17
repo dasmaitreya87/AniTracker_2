@@ -4,8 +4,7 @@ import { useStore } from '../services/store';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { BadgeCard } from '../components/BadgeCard';
-import { Settings, Shield, Award, LogIn, X, Image as ImageIcon, Upload, Loader, Eye, EyeOff } from 'lucide-react';
-import { PostLoginPreference } from '../types';
+import { Settings, Shield, Award, X, Image as ImageIcon, Upload, Loader, Eye, EyeOff } from 'lucide-react';
 import { uploadToCloudinary } from '../services/cloudinaryService';
 
 export const Profile = () => {
@@ -36,10 +35,6 @@ export const Profile = () => {
   const handleSave = () => {
     updateUser(formData);
     setIsEditing(false);
-  };
-
-  const handlePrefChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      updateUser({ postLoginDefault: e.target.value as PostLoginPreference });
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'avatarUrl' | 'bannerUrl') => {
@@ -281,25 +276,6 @@ export const Profile = () => {
            <Shield size={20} className="text-zinc-500"/> Account & Preferences
          </h3>
          
-         {/* Post Login Preference */}
-         <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-             <div>
-                 <h4 className="font-medium text-white flex items-center gap-2">
-                    <LogIn size={16} className="text-rose-500"/> On next login, go to:
-                 </h4>
-                 <p className="text-sm text-zinc-500">Choose your startup page.</p>
-             </div>
-             <select 
-                value={user.postLoginDefault || 'ASK'}
-                onChange={handlePrefChange}
-                className="bg-zinc-800 text-white border border-zinc-700 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-rose-500 text-sm"
-             >
-                 <option value="ASK">Always Ask</option>
-                 <option value="DASHBOARD">Dashboard</option>
-                 <option value="LANDING">Trending / Landing</option>
-             </select>
-         </div>
-
          {/* Public Profile Toggle */}
          <div className="flex items-center justify-between p-4 border-b border-zinc-800">
            <div>

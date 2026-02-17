@@ -113,8 +113,6 @@ export interface AppNotification {
   onAction?: () => void;
 }
 
-export type PostLoginPreference = 'DASHBOARD' | 'LANDING' | 'ASK';
-
 export interface FavoriteItem {
   animeId: number;
   title: string;
@@ -131,7 +129,6 @@ export interface UserProfile {
   favoriteGenres: string[];
   isPrivate: boolean;
   badges: UserBadge[];
-  postLoginDefault?: PostLoginPreference;
   recommendationFeedback?: RecommendationFeedback[];
   favorites?: FavoriteItem[];
   showAdultContent?: boolean;

@@ -10,7 +10,6 @@ import { NewsDetail } from './pages/NewsDetail'; // New Page
 import { Favorites } from './pages/Favorites'; // New Page
 import { LandingPage } from './components/LandingPage';
 import { SearchAddFlow } from './components/SearchAddFlow';
-import { PostLoginChoiceModal } from './components/PostLoginChoiceModal';
 import { AddNewsModal } from './components/AddNewsModal';
 import { PublicProfile } from './pages/PublicProfile'; // New Page
 import { Button } from './components/ui/Button';
@@ -61,7 +60,6 @@ const AppContent = () => {
               mode={modal.mode}
               initialEntry={modal.data}
             />
-            <PostLoginChoiceModal />
         </>
     );
   }
@@ -103,7 +101,6 @@ const AppContent = () => {
         initialEntry={modal.data}
       />
       <AddNewsModal />
-      <PostLoginChoiceModal />
     </Layout>
   );
 };
