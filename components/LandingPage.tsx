@@ -301,18 +301,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAddAnime }) => {
 
       <main>
         {/* Hero Section */}
-        <div className="relative w-full min-h-[90vh] flex items-center pt-32 pb-20 overflow-hidden bg-black">
+        <div className="relative w-full min-h-[90vh] flex items-center pt-32 pb-20 overflow-hidden bg-zinc-900">
            {/* Background Layer */}
            {heroAnime ? (
              <div className="absolute inset-0 w-full h-full z-0">
                <img 
-                 src={heroAnime.coverImage.large} 
-                 className="w-full h-full object-cover opacity-40 blur-sm scale-105" 
+                 src={heroAnime.bannerImage || heroAnime.coverImage.large} 
+                 className="w-full h-full object-cover opacity-70 scale-105" 
                  alt="Hero Background" 
                />
-               {/* Improved contrast gradients */}
-               <div className="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-transparent" />
-               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+               {/* Improved contrast gradients - Lighter to show image */}
+               <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/40 to-transparent" />
+               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
              </div>
            ) : (
              <div className="absolute inset-0 bg-zinc-900 z-0" />
@@ -361,7 +361,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAddAnime }) => {
                         size="lg" 
                         variant="secondary"
                         onClick={() => handleInfoClick(heroAnime?.id || 0)} 
-                        className="px-6 py-3 rounded-xl text-lg hover:scale-105 transition-transform bg-zinc-800/60 text-zinc-100 border border-zinc-700 hover:bg-zinc-700/80 backdrop-blur-md"
+                        className="px-6 py-3 rounded-xl text-lg hover:scale-105 transition-transform bg-zinc-800/80 text-zinc-100 border border-zinc-700 hover:bg-zinc-700/90 backdrop-blur-md"
                     >
                       <Info className="mr-2" size={24} /> More Info
                     </Button>
